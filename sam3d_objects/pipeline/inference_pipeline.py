@@ -672,6 +672,14 @@ class InferencePipeline:
 
         _guided_solver = getattr(self, 'guided_solver', None)
         if _guided_solver is not None:
+            # Inject runtime context that the solver can't get from the
+            # constructor (pointmap_scale/shift only exist after the
+            # preprocessor has run inside pipeline.run()). The solver was
+            # constructed externally with ss_decoder / pose_decoder /
+            # intrinsics; we top up the rest here.
+            if hasattr(_guided_solver, "context"):
+                _guided_solver.context["scene_scale"] = ss_input_dict.get("pointmap_scale", None)
+                _guided_solver.context["scene_shift"] = ss_input_dict.get("pointmap_shift", None)
             ss_generator._solver = _guided_solver
         _grad_ctx = torch.enable_grad() if _guided_solver is not None else torch.no_grad()
         with _grad_ctx:
